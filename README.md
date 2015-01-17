@@ -5,7 +5,7 @@ Dependencias
 sudo apt-get update
 ```
 ```sh
-sudo apt-get install python pip
+sudo apt-get install python-pip
 ```
 ```sh
 sudo pip virtualenv
