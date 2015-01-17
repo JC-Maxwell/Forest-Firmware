@@ -17,5 +17,5 @@ sudo pip install Flask
 sudo pip install -U selenium
 ```
 ```sh
-pip install pyvirtualdisplay
+sudo pip install pyvirtualdisplay
 ```
