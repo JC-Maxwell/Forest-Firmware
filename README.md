@@ -8,7 +8,7 @@ sudo apt-get update
 sudo apt-get install python-pip
 ```
 ```sh
-sudo pip virtualenv
+sudo pip install virtualenv
 ```
 ```sh
 sudo pip install Flask
