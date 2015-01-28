@@ -410,7 +410,11 @@ def search_by_date(**params):
 			init_calendar.click()
 
 			# --------------------- SELECT YEAR
-			number_of_click_for_year = (2014 - int(year)) * 12
+			number_of_click_for_year = (2015 - int(year)) * 12
+
+			# Add clicks of month
+			number_of_click_for_year = number_of_click_for_year + (datetime.datetime.now().month-1)
+
 			clicks = 1
 			while clicks <= number_of_click_for_year:
 				calendar = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'datepicker')))
@@ -421,15 +425,17 @@ def search_by_date(**params):
 
 			# --------------------- SELECT MONTH
 			# Number of Clicks in leftRow
-			number_of_click = datetime.datetime.now().month - int(month)
+			number_of_click = int(month) - 1
 			number_of_day = 1
 
 			clicks = 1
 			while clicks <= number_of_click: 
 				calendar = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'datepicker')))
 				rows = calendar.find_elements_by_class_name('dpButton') 
-				left_row = rows[0]
-				left_row.click()
+				# left_row = rows[0]
+				# left_row.click()
+				right_row = rows[1]
+				right_row.click()
 				clicks += 1
 			
 			calendar = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'datepicker')))
@@ -473,14 +479,100 @@ def search_by_date(**params):
 		# --------------------- EXTRACT CFDI FILES
 		if response.get_type() is K.SUCCESS:
 			browser = response.content 
-			response = cfdi_mining(browser=browser, bills=bills, stock=stock)
-			if response.get_type() is K.SUCCESS:
+
+			try:
+				record_limit = WebDriverWait(browser,2).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_PnlLimiteRegistros')))
+				# MORE THAN 500
+				logger.debug("MORE THAN 500")
+				# For each day in month
+				number_of_day = calendarTool.monthrange(int(year),int(month))[1]
+				if bill_type is K.RECEIVED_BILL:
+					for day in range(1,number_of_day + 1):
+						if day < 10:
+							day = "0" + str(day)
+						else:
+							day = str(day)
+						# --------------------- SELECT DAY
+						logger.debug("number of day " + str(day))
+						select_day = {
+							'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='SeleccionFecha']//tr[1]/td[4]/div[@class='sbHolder']/a[@class='sbToggle']"))),
+							'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='SeleccionFecha']//tr[1]/td[4]/div[@class='sbHolder']/a[@class='sbSelector']")))
+						}
+						select_day['button'].click()
+						time.sleep(2)
+						select_day['options'] = WebDriverWait(browser,WAIT).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@id='SeleccionFecha']//tr[1]/td[4]/div[@class='sbHolder']/ul/li/a")))
+
+						for option in select_day['options']:
+							if option.text == day:
+								option.click()
+								break
+						
+						# --------------------- SEND REQUEST FOR GET BILLS
+						search_cfdi = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_BtnBusqueda')))
+						search_cfdi.click()
+
+						# --------------------- HANDLE LOADING LAYER ERROR
+						response = skip_loading_layer(browser=browser)
+						# --------------------- EXTRACT CFDI FILES
+						if response.get_type() is K.SUCCESS:
+							browser = response.content 
+
+						response = cfdi_mining(browser=browser, bills=bills, stock=stock)
+						if response.get_type() is K.SUCCESS:
+							# Define response
+							logger.debug(str(len(response.content)))
+						else:
+							logger.debug("No results")
+				elif bill_type is K.ISSUED_BILL:
+					for day in range(1,number_of_day + 1):
+						# Seleccionar en calendario
+						validator_for_calendar = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaInicial2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder']/a[@class='sbToggle']")))			
+						init_calendar = WebDriverWait(browser,WAIT).until(EC.element_to_be_clickable((By.ID, 'ctl00_MainContent_CldFechaInicial2_BtnFecha2'))) 
+						init_calendar.click()
+
+						calendar = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'datepicker')))
+						day_buttons = calendar.find_elements_by_class_name('dpTD') 
+
+						counter = 0
+						while counter < len(day_buttons):
+							if (day_buttons[counter].get_attribute('onclick')):
+								first_day = (counter - 1)
+								counter = day_buttons
+							else:
+								counter += 1
+
+						day_buttons[first_day + day].click()
+
+						# --------------------- SEND REQUEST FOR GET BILLS
+						search_cfdi = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_BtnBusqueda')))
+						search_cfdi.click()
+
+						# --------------------- HANDLE LOADING LAYER ERROR
+						response = skip_loading_layer(browser=browser)
+						# --------------------- EXTRACT CFDI FILES
+						if response.get_type() is K.SUCCESS:
+							browser = response.content 
+
+						response = cfdi_mining(browser=browser, bills=bills, stock=stock)
+						if response.get_type() is K.SUCCESS:
+							# Define response
+							logger.debug(str(len(response.content)))
+						else:
+							logger.debug("No results")
+
 				response = Success(response.content)
+			except:
+				# LESS THAN 500
+				logger.debug("LESS THAN 500")
+
+				response = cfdi_mining(browser=browser, bills=bills, stock=stock)
+				if response.get_type() is K.SUCCESS:
+					response = Success(response.content)
 
 		logger.debug('End function')
 	except:
 		# Extract Error
-		e = str(sys.exc_info()[1])
+		e = str(sys.exc_info()[0]) + " " +  str(sys.exc_info()[1])
 		# Send to LOGS
 		logger.critical('Internal Error ' + e)
 		# Define RESPONSE
@@ -605,7 +697,7 @@ def cfdi_mining(**params):
 		response = Success(bills)
 	except:
 		# Extract Error
-		e = str(sys.exc_info()[1])
+		e = str(sys.exc_info()[0]) + " " + str(sys.exc_info()[1])
 		# Send to LOGS
 		logger.critical('Internal Error ' + e)
 		# Define RESPONSE
