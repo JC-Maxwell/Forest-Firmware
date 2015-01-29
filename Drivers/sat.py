@@ -410,7 +410,7 @@ def search_by_date(**params):
 			init_calendar.click()
 
 			# --------------------- SELECT YEAR
-			number_of_click_for_year = (2015 - int(year)) * 12
+			number_of_click_for_year = (datetime.datetime.now().year - int(year)) * 12
 
 			# Add clicks of month
 			number_of_click_for_year = number_of_click_for_year + (datetime.datetime.now().month-1)
