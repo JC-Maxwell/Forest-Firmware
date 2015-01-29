@@ -517,12 +517,96 @@ def search_by_date(**params):
 						if response.get_type() is K.SUCCESS:
 							browser = response.content 
 
-						response = cfdi_mining(browser=browser, bills=bills, stock=stock)
-						if response.get_type() is K.SUCCESS:
-							# Define response
-							logger.debug(str(len(response.content)))
-						else:
-							logger.debug("No results")
+							try:
+								record_limit = WebDriverWait(browser,2).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_PnlLimiteRegistros')))
+								# MORE THAN 500
+								logger.debug("MORE THAN 500")
+
+								for hour in range(0,24):
+									if hour < 10:
+										hour= "0" + str(hour)
+									else:
+										hour = str(hour)
+
+									# --------------------- SELECT START HOUR
+									logger.debug("number of hour " + str(hour))
+									select_hour_start = {
+										'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[2]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
+										'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[2]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
+									}
+									select_hour_start['button'].click()
+									time.sleep(2)
+									select_hour_start['options'] = WebDriverWait(browser,WAIT).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@id='SeleccionFecha']//tr[2]/td[2]//div[@class='sbHolder'][1]/ul/li/a")))
+
+									for option in select_hour_start['options']:
+										if option.text == hour:
+											option.click()
+											break
+
+									# --------------------- SELECT START HOUR
+									logger.debug("number of hour " + str(hour))
+									select_hour_end = {
+										'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[3]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
+										'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[3]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
+									}
+									select_hour_end['button'].click()
+									time.sleep(2)
+									select_hour_end['options'] = WebDriverWait(browser,WAIT).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@id='SeleccionFecha']//tr[2]/td[3]//div[@class='sbHolder'][1]/ul/li/a")))
+
+									for option in select_hour_end['options']:
+										if option.text == hour:
+											option.click()
+											break
+									
+									# --------------------- SEND REQUEST FOR GET BILLS
+									search_cfdi = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_BtnBusqueda')))
+									search_cfdi.click()
+
+									response = cfdi_mining(browser=browser, bills=bills, stock=stock)
+									if response.get_type() is K.SUCCESS:
+										# Define response
+										logger.debug(str(len(response.content)))
+									else:
+										logger.debug("No results")
+
+								# --------------------- CLEAR START HOUR
+								hour = '00'
+								logger.debug("Clear start hour " + str(hour))
+								select_hour_start = {
+									'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[2]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
+									'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[2]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
+								}
+								select_hour_start['button'].click()
+								time.sleep(2)
+								select_hour_start['options'] = WebDriverWait(browser,WAIT).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@id='SeleccionFecha']//tr[2]/td[2]//div[@class='sbHolder'][1]/ul/li/a")))
+
+								for option in select_hour_start['options']:
+									if option.text == hour:
+										option.click()
+										break
+
+								# --------------------- CLEAR END HOUR
+								hour = '23'
+								logger.debug("Clear end hour " + str(hour))
+								select_hour_end = {
+									'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[3]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
+									'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[3]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
+								}
+								select_hour_end['button'].click()
+								time.sleep(2)
+								select_hour_end['options'] = WebDriverWait(browser,WAIT).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@id='SeleccionFecha']//tr[2]/td[3]//div[@class='sbHolder'][1]/ul/li/a")))
+
+								for option in select_hour_end['options']:
+									if option.text == hour:
+										option.click()
+										break
+							except:
+								response = cfdi_mining(browser=browser, bills=bills, stock=stock)
+								if response.get_type() is K.SUCCESS:
+									# Define response
+									logger.debug(str(len(response.content)))
+								else:
+									logger.debug("No results")
 				elif bill_type is K.ISSUED_BILL:
 					for day in range(1,number_of_day + 1):
 						# Seleccionar en calendario
@@ -553,12 +637,100 @@ def search_by_date(**params):
 						if response.get_type() is K.SUCCESS:
 							browser = response.content 
 
-						response = cfdi_mining(browser=browser, bills=bills, stock=stock)
-						if response.get_type() is K.SUCCESS:
-							# Define response
-							logger.debug(str(len(response.content)))
-						else:
-							logger.debug("No results")
+							try:
+								record_limit = WebDriverWait(browser,2).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_PnlLimiteRegistros')))
+								# MORE THAN 500
+								logger.debug("MORE THAN 500")
+
+								for hour in range(0,24):
+									if hour < 10:
+										hour = "0" + str(hour)
+									else:
+										hour = str(hour)
+
+									# --------------------- SELECT START HOUR
+									logger.debug("number of hour " + str(hour))
+									select_hour_start = {
+										'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaInicial2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
+										'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaInicial2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
+									}
+									select_hour_start['button'].click()
+									time.sleep(2)
+									select_hour_start['options'] = WebDriverWait(browser,WAIT).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@id='SeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/ul/li/a")))
+
+									for option in select_hour_start['options']:
+										if option.text == hour:
+											option.click()
+											break
+
+									# --------------------- SELECT START HOUR
+									logger.debug("number of hour " + str(hour))
+									select_hour_end = {
+										'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaFinal2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
+										'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaFinal2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
+									}
+									select_hour_end['button'].click()
+									time.sleep(2)
+									select_hour_end['options'] = WebDriverWait(browser,WAIT).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@id='SeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/ul/li/a")))
+
+									for option in select_hour_end['options']:
+										if option.text == hour:
+											option.click()
+											break
+									
+									# --------------------- SEND REQUEST FOR GET BILLS
+									search_cfdi = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_BtnBusqueda')))
+									search_cfdi.click()
+
+									# --------------------- HANDLE LOADING LAYER ERROR
+									response = skip_loading_layer(browser=browser)
+
+									response = cfdi_mining(browser=browser, bills=bills, stock=stock)
+									if response.get_type() is K.SUCCESS:
+										# Define response
+										logger.debug(str(len(response.content)))
+									else:
+										logger.debug("No results")
+
+								# --------------------- CLEAR START HOUR
+								logger.debug("Clear start hour")
+								hour = '00'
+								
+								select_hour_start = {
+									'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaInicial2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
+									'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaInicial2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
+								}
+								select_hour_start['button'].click()
+								time.sleep(2)
+								select_hour_start['options'] = WebDriverWait(browser,WAIT).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@id='SeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/ul/li/a")))
+
+								for option in select_hour_start['options']:
+									if option.text == hour:
+										option.click()
+										break
+
+								# --------------------- CLEAR END HOUR
+								hour = '23'
+								logger.debug("Clear start hour " + str(hour))
+								select_hour_end = {
+									'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaFinal2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
+									'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaFinal2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
+								}
+								select_hour_end['button'].click()
+								time.sleep(2)
+								select_hour_end['options'] = WebDriverWait(browser,WAIT).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@id='SeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/ul/li/a")))
+
+								for option in select_hour_end['options']:
+									if option.text == hour:
+										option.click()
+										break
+							except:
+								response = cfdi_mining(browser=browser, bills=bills, stock=stock)
+								if response.get_type() is K.SUCCESS:
+									# Define response
+									logger.debug(str(len(response.content)))
+								else:
+									logger.debug("No results")
 
 				response = Success(response.content)
 			except:
