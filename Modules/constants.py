@@ -15,11 +15,14 @@ FISCAL_STATUS = {
 }
 
 # VOUCHER_EFFECT
+# AQU ES DONDE LE TIENES QUE MOVER CUANDO TRUENE LA CHINGADERA
 INCOME = 'income'
 EGRESS = 'egress'
+TRANSFER = 'transfer'
 VOUCHER_EFFECT = {
 	'Ingreso' : INCOME,
-	'Egreso' : EGRESS
+	'Egreso' : EGRESS,
+	'Traslado' : TRANSFER
 }
 
 # RESPONSE
