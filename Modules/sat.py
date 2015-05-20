@@ -181,7 +181,8 @@ def get_first_bills(params):
 			response = sat.get_first_bills(type=K.BILL_TYPE[bill_type],credentials={'identifier':identifier,'password':password}, date={'year':year,'month':month})
 			if response.get_type() is K.SUCCESS and response.content is not K.UNAUTHORIZED:
 				bills = response.content
-				total_bills = bills
+				total_bills = total_bills + bills
+		
 		result['new'] = total_bills
 		response = sat.download_bills(credentials={'identifier':identifier,'password':password},bills=total_bills)
 		if response.get_type() is K.SUCCESS:
