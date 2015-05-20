@@ -43,6 +43,56 @@ logger = logging.getLogger('root')
 
 # ======================================================== CODE MODULE
 
+def get_first_bills(**params):
+	# Define empty object
+	browser = {}
+
+	try:
+		# Send to LOGS
+		logger.info('Start function in DRIVER')
+
+		# GET PARAMS
+		bill_type = params['type']
+		identifier = params['credentials']['identifier']
+		password = params['credentials']['password']
+		year = params['date']['year']
+		month = params['date']['month']
+		stock = []
+
+		months = [month]
+
+		logger.debug('Date:')
+		logger.debug(year)
+		logger.debug(months)
+		# Get browser
+		response = browser_initialize(path=BUFFER_PATH)
+		if response.get_type() is K.SUCCESS:
+			browser = response.content
+			# Get authentication
+			response = authentication(browser=browser, identifier=identifier, password=password, method='identifier')
+			if response.get_type() is K.SUCCESS and response.content['status'] is K.AUTHORIZED:
+				# Search bills and extract CFDI Files
+				bills = []
+				for month in months:
+					response = search_bills(browser=browser, type=bill_type, search_by=K.DATE, date={'year':year,'month':month},stock=stock,first_bills=True)
+					if response.get_type() is K.SUCCESS:
+						bills = bills + response.content
+				
+				response = Success(bills)
+		logger.info('End of function in DRIVER')
+	except:
+		# Extract Error
+		e = str(sys.exc_info()[1])
+		# Send to LOGS
+		logger.critical('Error: ' + e)
+		# Create ERROR
+		response = Error(http_code['internal'],'Internal server error')
+	
+	# CLOSE BROWSER
+	browser.quit()
+	# SEND RESPONSE
+	return response
+
 def get_bills_by_month(**params):
 	# Define empty object
 	browser = {}
@@ -289,6 +339,10 @@ def search_bills(**params):
 		search_by = params['search_by']
 		stock = params['stock']
 
+		first_bills = False
+		if('first_bills' in params):
+			first_bills = params['first_bills']
+
 		# --------------------- REDIRECT TO PORTAL
 		browser.get('https://portalcfdi.facturaelectronica.sat.gob.mx/')
 
@@ -311,7 +365,7 @@ def search_bills(**params):
 		type_of_search.click()
 
 		if search_by is K.DATE:
-			response = search_by_date(browser=browser,type=bill_type,date=params['date'],stock=stock)
+			response = search_by_date(browser=browser,type=bill_type,date=params['date'],stock=stock,first_bills=first_bills)
 		elif search_by is K.UUID:
 			response = search_by_uuid(browser=browser,type=bill_type,uuids=params['uuids'],stock=stock)
 
@@ -367,6 +421,10 @@ def search_by_date(**params):
 		month = params['date']['month']
 		stock = params['stock']
 		bills = []
+
+		first_bills = False
+		if('first_bills' in params):
+			first_bills = params['first_bills']
 		
 		logger.debug('Date:')
 		logger.debug(year)
@@ -562,7 +620,7 @@ def search_by_date(**params):
 									search_cfdi = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_BtnBusqueda')))
 									search_cfdi.click()
 
-									response = cfdi_mining(browser=browser, bills=bills, stock=stock)
+									response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills)
 									if response.get_type() is K.SUCCESS:
 										# Define response
 										logger.debug(str(len(response.content)))
@@ -601,7 +659,7 @@ def search_by_date(**params):
 										option.click()
 										break
 							except:
-								response = cfdi_mining(browser=browser, bills=bills, stock=stock)
+								response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills)
 								if response.get_type() is K.SUCCESS:
 									# Define response
 									logger.debug(str(len(response.content)))
@@ -685,7 +743,7 @@ def search_by_date(**params):
 									# --------------------- HANDLE LOADING LAYER ERROR
 									response = skip_loading_layer(browser=browser)
 
-									response = cfdi_mining(browser=browser, bills=bills, stock=stock)
+									response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills)
 									if response.get_type() is K.SUCCESS:
 										# Define response
 										logger.debug(str(len(response.content)))
@@ -725,7 +783,7 @@ def search_by_date(**params):
 										option.click()
 										break
 							except:
-								response = cfdi_mining(browser=browser, bills=bills, stock=stock)
+								response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills)
 								if response.get_type() is K.SUCCESS:
 									# Define response
 									logger.debug(str(len(response.content)))
@@ -737,7 +795,7 @@ def search_by_date(**params):
 				# LESS THAN 500
 				logger.debug("LESS THAN 500")
 
-				response = cfdi_mining(browser=browser, bills=bills, stock=stock)
+				response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills)
 				if response.get_type() is K.SUCCESS:
 					response = Success(response.content)
 
@@ -804,6 +862,10 @@ def cfdi_mining(**params):
 		bills = params['bills']
 		stock = params['stock']
 
+		first_bills = False
+		if('first_bills' in params):
+			first_bills = params['first_bills']
+
 		# --------------------- GET DIV OF RESULTS
 		logger.debug('Get DIV of results')
 		div_results = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_PnlResultados')))
@@ -813,7 +875,8 @@ def cfdi_mining(**params):
 			# --------------------- GET PAGES OF BILLS
 			logger.debug('Get pages of bills')
 			pages = WebDriverWait(browser,WAIT).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@id='DivPaginas']/*")))
-
+			if(first_bills == True):
+				pages = pages[:1]
 			# --------------------- FOR EACH PAGE FIND BTNDESCARGA AND CLICK FOR DOWNLOAD BILL
 			for page in pages:
 				logger.debug('Get rows of page')

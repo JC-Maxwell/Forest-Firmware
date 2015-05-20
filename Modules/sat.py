@@ -3,6 +3,7 @@
 # NATIVE
 import sys
 import math
+import datetime
 
 # EXTERNAL
 import logging
@@ -143,6 +144,57 @@ def update(params):
 					else:
 						bill['xml'] = ''
 
+		response = Success(result)
+				
+	except:
+		# Extract Error
+		e = str(sys.exc_info()[0]) + ' ' + str(sys.exc_info()[1])
+		# Send to LOGS
+		logger.critical('Internal Error ' + e)
+		# Define RESPONSE
+		response = Error(http_code['internal'],'Internal Server Error')
+	return response
+
+                                              
+def get_first_bills(params):
+	try:
+		# Get params
+		identifier = params['identifier']
+		password = params['password']
+
+		# Get current month
+		now = datetime.datetime.now()
+		
+		# Ensure array of Months
+		year = now.year
+		month = helper.format_month(now.month)
+
+		result =  {
+			'new' : [],
+			'updated' : []
+		}
+
+		total_bills = []
+
+		for bill_type in K.BILL_TYPE: 
+			# for month in months:
+			response = sat.get_first_bills(type=K.BILL_TYPE[bill_type],credentials={'identifier':identifier,'password':password}, date={'year':year,'month':month})
+			if response.get_type() is K.SUCCESS and response.content is not K.UNAUTHORIZED:
+				bills = response.content
+				total_bills = bills
+		result['new'] = total_bills
+		response = sat.download_bills(credentials={'identifier':identifier,'password':password},bills=total_bills)
+		if response.get_type() is K.SUCCESS:
+			for bill in result['new']:
+				# Open the xml file for reading
+				path_file = K.BUFFER_PATH + bill['uuid'] + '.xml'
+				response = helper.read_file(path_file)
+				if response.get_type() is K.SUCCESS:
+					data = response.content
+					if type(data) is str:
+						bill['xml'] = data
+					else:
+						bill['xml'] = ''		
 		response = Success(result)
 				
 	except:
