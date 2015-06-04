@@ -9,12 +9,15 @@ import datetime
 import calendar as calendarTool 
 
 # EXTERNAL
+from pymongo import MongoClient 
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
+
 
 from pyvirtualdisplay import Display
 
@@ -99,7 +102,7 @@ def get_bills_by_month(**params):
 
 	try:
 		# Send to LOGS
-		logger.info('Start function in DRIVER')
+		logger.info('				- (Start function in DRIVER)')
 
 		# GET PARAMS
 		bill_type = params['type']
@@ -109,9 +112,9 @@ def get_bills_by_month(**params):
 		months = params['date']['months']
 		stock = params['stock']
 
-		logger.debug('Date:')
-		logger.debug(year)
-		logger.debug(months)
+		logger.debug('				Date:')
+		logger.debug("				Year: " + str(year))
+		logger.debug("				Months: " + str(months))
 		# Get browser
 		response = browser_initialize(path=BUFFER_PATH)
 		if response.get_type() is K.SUCCESS:
@@ -122,12 +125,12 @@ def get_bills_by_month(**params):
 				# Search bills and extract CFDI Files
 				bills = []
 				for month in months:
-					response = search_bills(browser=browser, type=bill_type, search_by=K.DATE, date={'year':year,'month':month},stock=stock)
+					response = search_bills(browser=browser, type=bill_type, search_by=K.DATE, date={'year':year,'month':month},stock=stock,credentials=params['credentials'])
 					if response.get_type() is K.SUCCESS:
 						bills = bills + response.content
 				
 				response = Success(bills)
-		logger.info('End of function in DRIVER')
+		logger.info('				- (End of function in DRIVER)')
 	except:
 		# Extract Error
 		e = str(sys.exc_info()[1])
@@ -250,7 +253,7 @@ def download_bills(**params):
 def browser_initialize(**params):	
 	# Configure Browser	
 	try:
-		logger.debug('Start function')
+		logger.debug('				- (Start function)')
 		if 'path' in params:
 			
 			response = helper.ensure_path(params['path'])
@@ -262,15 +265,15 @@ def browser_initialize(**params):
 				fp.set_preference("browser.download.dir", params['path'])
 				fp.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/octet-stream")
 				# Initialize BROWSER
-				logger.debug('Browser Initialize')
+				logger.debug('				- (Browser Initialize)')
 				browser = webdriver.Firefox(firefox_profile=fp)
 				response = Success(browser)
 		else:
 			# Initialize BROWSER
-			logger.debug('Browser Initialize')
+			logger.debug('				- (Browser Initialize)')
 			browser = webdriver.Firefox()
 			response = Success(browser)
-		logger.debug('End function')
+		logger.debug('				- (End function)')
 	except:
 		# Extract Error
 		e = str(sys.exc_info()[1])
@@ -283,7 +286,7 @@ def browser_initialize(**params):
 
 def authentication(**params):	
 	try:
-		logger.debug('Start function')
+		logger.debug('				- (Start function)')
 		if params['method'] is 'identifier':
 			try:
 				# Get browser
@@ -291,35 +294,35 @@ def authentication(**params):
 				# Get URL for Login
 				browser.get('https://cfdiau.sat.gob.mx/nidp/app/login?id=SATUPCFDiCon&sid=0&option=credential&sid=0')
 				# --------------------- FILL AND SEND LOGIN FORM 
-				logger.debug('Fill and send Login Form')
+				logger.debug('				- (Fill and send Login Form)')
 				inputRFC = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.NAME, 'Ecom_User_ID')))
 				inputRFC.send_keys(params['identifier'])
 				inputPassword = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.NAME, 'Ecom_Password')))
 				inputPassword.send_keys(params['password'])
 
-				logger.debug('Submitted')
+				logger.debug('				- (Submitted)')
 				submit_button = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'submit')))
 				submit_button.click()
 				# --------------------- END OF FILL AND SEND LOGIN FORM
 
 				# Redirecto to SAT Portal
-				logger.debug('Redirect to SAT Portal')
+				logger.debug('				- (Redirect to SAT Portal)')
 				browser.get('https://portalcfdi.facturaelectronica.sat.gob.mx/')
 
 				# Define Bill Type, if not triggered exception the credentials are correct
-				logger.debug('Define Bill Type for verify credentials')
+				logger.debug('				- (Define Bill Type for verify credentials)')
 				receivedBillsButton = WebDriverWait(browser,5).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_RdoTipoBusquedaEmisor')))
 				receivedBillsButton.click()	
 
 				# Define response
-				logger.debug('Authorized')
+				logger.debug('				- (Authorized)')
 				response = Success({'status':K.AUTHORIZED})
 			except:
-				logger.warning('Unauthorized')
+				logger.warning('				- (Unauthorized)')
 				response = Success({'status':K.UNAUTHORIZED})
 		elif method is 'fiel':
 			pass
-		logger.debug('End function')
+		logger.debug('				- (End function)')
 	except:
 		# Extract Error
 		e = str(sys.exc_info()[1])
@@ -332,12 +335,13 @@ def authentication(**params):
 
 def search_bills(**params):
 	try:
-		logger.debug('Start function')
+		logger.debug('				- (Start function)')
 		# GET PARAMS
 		browser = params['browser']
 		bill_type = params['type'] 
 		search_by = params['search_by']
 		stock = params['stock']
+		credentials = params['credentials']
 
 		first_bills = False
 		if('first_bills' in params):
@@ -357,7 +361,7 @@ def search_bills(**params):
 		continue_button.click()
 
 		# --------------------- DEFINE TYPE OF SEARCH
-		logger.debug('Define type search')
+		logger.debug('				- (Define type search)')
 		if search_by is K.DATE:
 			type_of_search = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_RdoFechas')))
 		elif search_by is K.UUID:
@@ -365,14 +369,14 @@ def search_bills(**params):
 		type_of_search.click()
 
 		if search_by is K.DATE:
-			response = search_by_date(browser=browser,type=bill_type,date=params['date'],stock=stock,first_bills=first_bills)
+			response = search_by_date(browser=browser,type=bill_type,date=params['date'],stock=stock,first_bills=first_bills,credentials=credentials)
 		elif search_by is K.UUID:
 			response = search_by_uuid(browser=browser,type=bill_type,uuids=params['uuids'],stock=stock)
 
 		if response.get_type() is K.SUCCESS:
 			# Define response
 			response = Success(response.content)
-		logger.debug('End function')
+		logger.debug('				- (End function)')
 	except:
 		# Extract Error
 		e = str(sys.exc_info()[1])
@@ -384,23 +388,23 @@ def search_bills(**params):
 	return response
 
 def skip_loading_layer(**params):
-	logger.debug('Start function')
+	logger.debug('				- (Start function)')
 	try:
 		# GET PARAMS
 		browser = params['browser']
 		try:
 			# --------------------- WAIT FOR LOADING LAYER
-			logger.debug('Wa it for loading layer')
+			logger.debug('				- (Wait for loading layer)')
 			progress_search = WebDriverWait(browser,WAIT).until(EC.visibility_of_element_located((By.ID, 'ctl00_MainContent_UpdateProgress1'))) 
 
 			# --------------------- WAIT FOR LOADING OUT
-			logger.debug('Wait for out loading layer')
+			logger.debug('				- (Wait for out loading layer)')
 			progress_search = WebDriverWait(browser,WAIT).until(EC.invisibility_of_element_located((By.ID, 'ctl00_MainContent_UpdateProgress1'))) 
 			response = Success(browser)
 		except:
-			logger.debug('Ingore layers')
+			logger.debug('				- (Ingore layers)')
 			response = Success(browser)
-		logger.debug('End function')
+		logger.debug('				- (End function)')
 	except:
 		# Extract Error
 		e = str(sys.exc_info()[1])
@@ -413,22 +417,23 @@ def skip_loading_layer(**params):
 
 def search_by_date(**params):
 	try:
-		logger.debug('Start function')
+		logger.debug('				- (Start function)')
 		# GET PARAMS
 		browser = params['browser']
 		bill_type = params['type']
 		year = params['date']['year']
 		month = params['date']['month']
 		stock = params['stock']
+		credentials = params['credentials']
 		bills = []
 
 		first_bills = False
 		if('first_bills' in params):
 			first_bills = params['first_bills']
 		
-		logger.debug('Date:')
-		logger.debug(year)
-		logger.debug(month)
+		logger.debug('				Date :')
+		logger.debug('				Year :' + str(year))
+		logger.debug('				Month :'  + str(month))
 		# Logic
 		if bill_type is K.RECEIVED_BILL:
 			
@@ -541,7 +546,7 @@ def search_by_date(**params):
 			try:
 				record_limit = WebDriverWait(browser,2).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_PnlLimiteRegistros')))
 				# MORE THAN 500
-				logger.debug("MORE THAN 500")
+				logger.debug("					RESULT: MORE THAN 500")
 				# For each day in month
 				number_of_day = calendarTool.monthrange(int(year),int(month))[1]
 				if bill_type is K.RECEIVED_BILL:
@@ -551,7 +556,7 @@ def search_by_date(**params):
 						else:
 							day = str(day)
 						# --------------------- SELECT DAY
-						logger.debug("number of day " + str(day))
+						logger.debug("					Number of day: " + str(day))
 						select_day = {
 							'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='SeleccionFecha']//tr[1]/td[4]/div[@class='sbHolder']/a[@class='sbToggle']"))),
 							'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='SeleccionFecha']//tr[1]/td[4]/div[@class='sbHolder']/a[@class='sbSelector']")))
@@ -578,7 +583,7 @@ def search_by_date(**params):
 							try:
 								record_limit = WebDriverWait(browser,2).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_PnlLimiteRegistros')))
 								# MORE THAN 500
-								logger.debug("MORE THAN 500")
+								logger.debug("				RESULT: MORE THAN 500")
 
 								for hour in range(0,24):
 									if hour < 10:
@@ -587,7 +592,7 @@ def search_by_date(**params):
 										hour = str(hour)
 
 									# --------------------- SELECT START HOUR
-									logger.debug("number of hour " + str(hour))
+									logger.debug("					Number of hour " + str(hour))
 									select_hour_start = {
 										'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[2]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
 										'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[2]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
@@ -602,7 +607,7 @@ def search_by_date(**params):
 											break
 
 									# --------------------- SELECT START HOUR
-									logger.debug("number of hour " + str(hour))
+									logger.debug("					Number of hour " + str(hour))
 									select_hour_end = {
 										'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[3]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
 										'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[3]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
@@ -620,16 +625,16 @@ def search_by_date(**params):
 									search_cfdi = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_BtnBusqueda')))
 									search_cfdi.click()
 
-									response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills)
+									response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills,credentials=credentials)
 									if response.get_type() is K.SUCCESS:
 										# Define response
-										logger.debug(str(len(response.content)))
+										logger.debug("					Number of results: " + str(len(response.content)))
 									else:
-										logger.debug("No results")
+										logger.debug("					NO RESULTS")
 
 								# --------------------- CLEAR START HOUR
 								hour = '00'
-								logger.debug("Clear start hour " + str(hour))
+								logger.debug("					Clear start hour: " + str(hour))
 								select_hour_start = {
 									'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[2]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
 									'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[2]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
@@ -645,7 +650,7 @@ def search_by_date(**params):
 
 								# --------------------- CLEAR END HOUR
 								hour = '23'
-								logger.debug("Clear end hour " + str(hour))
+								logger.debug("					Clear end hour: " + str(hour))
 								select_hour_end = {
 									'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[3]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
 									'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFecha_UpnlSeleccionFecha']//tr[2]/td[3]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
@@ -659,14 +664,15 @@ def search_by_date(**params):
 										option.click()
 										break
 							except:
-								response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills)
+								response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills,credentials=credentials)
 								if response.get_type() is K.SUCCESS:
 									# Define response
-									logger.debug(str(len(response.content)))
+									logger.debug("					Number of results: " + str(len(response.content)))
 								else:
-									logger.debug("No results")
+									logger.debug("					No results")
 				elif bill_type is K.ISSUED_BILL:
 					for day in range(1,number_of_day + 1):
+						logger.debug("					Number of day: " + str(day))
 						# Seleccionar en calendario
 						validator_for_calendar = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaInicial2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder']/a[@class='sbToggle']")))			
 						init_calendar = WebDriverWait(browser,WAIT).until(EC.element_to_be_clickable((By.ID, 'ctl00_MainContent_CldFechaInicial2_BtnFecha2'))) 
@@ -698,7 +704,7 @@ def search_by_date(**params):
 							try:
 								record_limit = WebDriverWait(browser,2).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_PnlLimiteRegistros')))
 								# MORE THAN 500
-								logger.debug("MORE THAN 500")
+								logger.debug("					RESULT: MORE THAN 500")
 
 								for hour in range(0,24):
 									if hour < 10:
@@ -707,7 +713,7 @@ def search_by_date(**params):
 										hour = str(hour)
 
 									# --------------------- SELECT START HOUR
-									logger.debug("number of hour " + str(hour))
+									logger.debug("					Number of hour " + str(hour))
 									select_hour_start = {
 										'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaInicial2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
 										'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaInicial2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
@@ -722,7 +728,7 @@ def search_by_date(**params):
 											break
 
 									# --------------------- SELECT START HOUR
-									logger.debug("number of hour " + str(hour))
+									logger.debug("					Number of hour " + str(hour))
 									select_hour_end = {
 										'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaFinal2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
 										'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaFinal2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
@@ -743,15 +749,15 @@ def search_by_date(**params):
 									# --------------------- HANDLE LOADING LAYER ERROR
 									response = skip_loading_layer(browser=browser)
 
-									response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills)
+									response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills,credentials=credentials)
 									if response.get_type() is K.SUCCESS:
 										# Define response
-										logger.debug(str(len(response.content)))
+										logger.debug("					Number of results: " + str(len(response.content)))
 									else:
-										logger.debug("No results")
+										logger.debug("					NO RESULTS")
 
 								# --------------------- CLEAR START HOUR
-								logger.debug("Clear start hour")
+								logger.debug("					Clear start hour")
 								hour = '00'
 								
 								select_hour_start = {
@@ -769,7 +775,7 @@ def search_by_date(**params):
 
 								# --------------------- CLEAR END HOUR
 								hour = '23'
-								logger.debug("Clear start hour " + str(hour))
+								logger.debug("					Clear start hour: " + str(hour))
 								select_hour_end = {
 									'button' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaFinal2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/a[@class='sbToggle']"))),
 									'input' : WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_MainContent_CldFechaFinal2_UpnlSeleccionFecha']//tr[1]/td[2]//div[@class='sbHolder'][1]/a[@class='sbSelector']")))
@@ -783,23 +789,26 @@ def search_by_date(**params):
 										option.click()
 										break
 							except:
-								response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills)
+								response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills,credentials=credentials)
 								if response.get_type() is K.SUCCESS:
 									# Define response
-									logger.debug(str(len(response.content)))
+									logger.debug("					Number of results: " + str(len(response.content)))
 								else:
-									logger.debug("No results")
+									logger.debug("					NO RESULTS")
 
 				response = Success(response.content)
 			except:
 				# LESS THAN 500
-				logger.debug("LESS THAN 500")
+				logger.debug("					RESULTS: LESS THAN 500")
 
-				response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills)
+				response = cfdi_mining(browser=browser, bills=bills, stock=stock,first_bills=first_bills,credentials=credentials)
 				if response.get_type() is K.SUCCESS:
+					logger.debug("					Number of results: " + str(len(response.content)))
 					response = Success(response.content)
+				else:
+					logger.debug("					NO RESULTS")
 
-		logger.debug('End function')
+		logger.debug('					- (End function)')
 	except:
 		# Extract Error
 		e = str(sys.exc_info()[0]) + " " +  str(sys.exc_info()[1])
@@ -856,30 +865,39 @@ def search_by_uuid(**params):
 
 def cfdi_mining(**params):
 	try:
-		logger.debug('Start function')
+		
+		# Stablish DB connection:
+		mongo = MongoClient('mongodb://mikemachine:kikinazul@ds033121-a0.mongolab.com:33121,ds033121-a1.mongolab.com:33121/forest',33121)
+		db = mongo['forest']
+
+		db_Buffer = db['Buffer']
+
+		logger.debug('						- (Start function)')
 		# GET PARAMS
 		browser = params['browser']
 		bills = params['bills']
 		stock = params['stock']
+		credentials = params['credentials']
 
 		first_bills = False
 		if('first_bills' in params):
 			first_bills = params['first_bills']
 
 		# --------------------- GET DIV OF RESULTS
-		logger.debug('Get DIV of results')
+		logger.debug('						- (Get DIV of results)')
 		div_results = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'ctl00_MainContent_PnlResultados')))
 
 		# --------------------- CHECKS FOR RESULTS
 		if (div_results.value_of_css_property('display') != 'none'):	
 			# --------------------- GET PAGES OF BILLS
-			logger.debug('Get pages of bills')
+			logger.debug('						- (Get pages of bills)')
 			pages = WebDriverWait(browser,WAIT).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@id='DivPaginas']/*")))
 			if(first_bills == True):
 				pages = pages[:1]
 			# --------------------- FOR EACH PAGE FIND BTNDESCARGA AND CLICK FOR DOWNLOAD BILL
-			for page in pages:
-				logger.debug('Get rows of page')
+			for index, page in enumerate(pages):
+				logger.debug('						- (Get rows of page)')
+				logger.debug('						- PAGE: ' + str(index + 1))
 				rows = page.find_elements_by_tag_name('tr')
 				# --------------------- FOR EACH ROW IN PAGE
 				download_buttons = []
@@ -918,17 +936,23 @@ def cfdi_mining(**params):
 						# else:
 						# 	logger.debug('UUID already exist')
 					except:
-						logger.debug('The file can not be downloaded')
+						logger.debug('						- (The file can not be downloaded)')
 
 					bills.append(invoice)
-					logger.debug(uuid)
+
+					item = invoice
+					item['identifier'] = credentials['identifier']
+					item['password'] = credentials['password']
+
+					db_Buffer.update({'uuid' : item['uuid']},item,True)
+					logger.debug("						UUID: " + credentials['identifier'] + " - " + uuid)
 
 				# --------------------- GO TO NEXT PAGE
-				logger.debug('Next Page')
+				logger.debug('						- (Next Page)')
 				next_page = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, "btnPgSiguiente")))
 				next_page.click()
 
-		logger.debug('End function')
+		logger.debug('						- (End function)')
 		response = Success(bills)
 	except:
 		# Extract Error
@@ -942,16 +966,28 @@ def cfdi_mining(**params):
 
 def download_files(**params):
 	try:
-		logger.debug('Start function')
+		logger.debug('						- (Start function)')
+		
+		# Stablish DB connection:
+		mongo = MongoClient('mongodb://mikemachine:kikinazul@ds033121-a0.mongolab.com:33121,ds033121-a1.mongolab.com:33121/forest',33121)
+		db = mongo['forest']
+		db_Buffer = db['Buffer']
+
 		# Get params
 		browser = params['browser']
 		bills = params['bills']
 
 		for bill in bills:
+
 			if not helper.uuid_is_stored_in_path(BUFFER_PATH,bill['uuid']) and 'xml' in bill:
 				browser.get('https://portalcfdi.facturaelectronica.sat.gob.mx/' + bill['xml'])
-				logger.debug('DOWNLOAD ' + bill['uuid'])
+				logger.debug('						DOWNLOAD: ' + bill['uuid'])
 				time.sleep(WAIT_FOR_DOWNLOAD)
+			
+			if helper.uuid_is_stored_in_path(BUFFER_PATH,bill['uuid']) and 'xml' in bill:
+				db_Buffer.remove({"uuid":bill['uuid']})
+				logger.debug("							- Remove from DB")
+
 		response = Success(bills)
 	except:
 		# Extract Error
@@ -960,5 +996,5 @@ def download_files(**params):
 		logger.critical('Internal Error ' + e)
 		# Define RESPONSE
 		response = Error(http_code['internal'],'Internal Server Error')
-	logger.debug('End function')
+	logger.debug('						- (End function)')
 	return response

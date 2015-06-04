@@ -87,6 +87,12 @@ def ensure_path(path):
 		response = Error(http_code['internal'],e)
 	return response
 
+def get_buffers_from_cursor(buffers_cursor):
+	buffers = []
+	for buffer_in_db in buffers_cursor:# Get a summary of taxpayer due to cursor timeout existance
+		buffers.append(buffer_in_db)
+	return buffers
+
 # Read File and return Content in String
 def read_file(path):
 	# Initialize function

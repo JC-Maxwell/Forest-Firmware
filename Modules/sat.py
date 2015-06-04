@@ -6,6 +6,7 @@ import math
 import datetime
 
 # EXTERNAL
+from pymongo import MongoClient
 import logging
 
 # DEVELOPMENT
@@ -65,17 +66,18 @@ def authentication(params):
 def update(params):
 	try:
 		# Get params
+
 		identifier = params['identifier']
 		password = params['password']
 		year = params['year']
 		months = params['months']
 		stock = params['uuids']
 
-		logger.debug("UUIDS")
-		logger.debug(stock)
 
-		logger.debug("IDENTIFIER: " + identifier)
-		logger.debug("PASSWORD: " + password)
+		logger.debug("===	Start UPDATE function for:")
+		logger.debug("		Identifier: " + identifier)
+
+		logger.debug("		UUIDS: " + str(len(stock)))
 
 		# Ensure array of Months
 		months = []
@@ -90,6 +92,8 @@ def update(params):
 			for month in range(1,now.month+1):
 				months.append(helper.format_month(month))
 
+		logger.debug("		Months: " + str(months))
+
 		result =  {
 			'new' : [],
 			'updated' : []
@@ -97,13 +101,43 @@ def update(params):
 
 		total_bills = []
 
+		logger.debug("			START GET LINKS")
 		for bill_type in K.BILL_TYPE: 
-			logger.debug("TYPE: " + bill_type)
-			# for month in months:
+			logger.debug("			Type of process: " + bill_type)
+			for month in months:
+					logger.debug("			For Month: " + month)
 			response = sat.get_bills_by_month(type=K.BILL_TYPE[bill_type],credentials={'identifier':identifier,'password':password}, date={'year':year,'months':months},stock=stock)
 			if response.get_type() is K.SUCCESS and response.content is not K.UNAUTHORIZED:
 				bills = response.content
 				total_bills = total_bills + bills
+
+		logger.debug("			Total bills before DB: " + str(len(total_bills)))		
+		logger.debug("			Get links from DB")
+
+		# Stablish DB connection:
+		mongo = MongoClient('mongodb://mikemachine:kikinazul@ds033121-a0.mongolab.com:33121,ds033121-a1.mongolab.com:33121/forest',33121)
+		db = mongo['forest']
+		db_Buffer = db['Buffer']
+
+		buffers_in_db = db_Buffer.find({"identifier":identifier})
+		buffers = helper.get_buffers_from_cursor(buffers_in_db)
+		logger.debug("			Buffers: " + str(len(buffers)))
+
+		insert = 0
+		for buff in buffers:
+			exist = filter(lambda bill: bill['uuid'] == buff['uuid'], total_bills)
+			if len(exist) == 0:
+				insert = insert + 1
+				del buff['_id']
+				total_bills.append(buff)
+
+		logger.debug("			Number of insert from db: " + str(insert))
+
+
+		logger.debug("			END GET LINKS")
+
+		logger.debug("			Extracted bills: " + str(len(total_bills)))
+		logger.debug("			Depure array to Mining")
 
 		for invoice in stock:
 			for bill in total_bills:
@@ -114,16 +148,21 @@ def update(params):
 					break
 
 		result['new'] = total_bills
+
+
+		logger.debug("			Bills to updated: " + str(len(result['updated'])))
+		logger.debug("			Bills to mining: " + str(len(result['new'])))		
 		
 		# SECCIONAR EL ARREGLO EN: [[],[],[]] O [[]]
+		logger.debug("			Split array of new bills")
 		array_of_bills = []
 		number_of_sections = int(math.ceil(float(len(result['new']))/K.MAX_DOWNLOADS))
 		start = 0
-		logger.debug('Number of sections: ' + str(number_of_sections))
+		logger.debug('			Number of sections to download: ' + str(number_of_sections))
 		for section in range(1,(number_of_sections + 1)):
-			logger.debug('Section: ' + str(section))
-			logger.debug('Start:' + str(start))
-			logger.debug('Part of array: ' + str(len(result['new'][start:(section*K.MAX_DOWNLOADS)])))
+			logger.debug('			Section: ' + str(section))
+			logger.debug('			Start: ' + str(start))
+			logger.debug('			Part of array: ' + str(len(result['new'][start:(section*K.MAX_DOWNLOADS)])))
 			array_of_bills.append(result['new'][start:(section*K.MAX_DOWNLOADS)])
 			start += K.MAX_DOWNLOADS 
 		
@@ -131,8 +170,8 @@ def update(params):
 		for invoices in array_of_bills:
 			response = sat.download_bills(credentials={'identifier':identifier,'password':password},bills=invoices)
 
-
 		if response.get_type() is K.SUCCESS:
+			logger.debug('			Download files: ' + str(len(response.content)))
 			for bill in result['new']:
 				# Open the xml file for reading
 				path_file = K.BUFFER_PATH + bill['uuid'] + '.xml'
