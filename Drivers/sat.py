@@ -679,7 +679,10 @@ def search_by_date(**params):
 						init_calendar.click()
 
 						calendar = WebDriverWait(browser,WAIT).until(EC.presence_of_element_located((By.ID, 'datepicker')))
-						day_buttons = calendar.find_elements_by_class_name('dpTD') 
+						# day_buttons = calendar.find_elements_by_class_name('dpTD') 
+						day_buttons = calendar.find_elements_by_xpath("//div[@id='datepicker']//tr[@class='dpTR']//td")	
+
+						logger.debug("				Day Buttons: " + str(len(day_buttons)))
 
 						counter = 0
 						while counter < len(day_buttons):
