@@ -987,7 +987,7 @@ def download_files(**params):
 				logger.debug('						DOWNLOAD: ' + bill['uuid'])
 				time.sleep(WAIT_FOR_DOWNLOAD)
 			
-			if helper.uuid_is_stored_in_path(BUFFER_PATH,bill['uuid']) and 'xml' in bill:
+			if (helper.uuid_is_stored_in_path(BUFFER_PATH,bill['uuid']) and 'xml' in bill) or (bill['status'] == K.CANCELED_STATUS):
 				db_Buffer.remove({"uuid":bill['uuid']})
 				logger.debug("							- Remove from DB")
 
