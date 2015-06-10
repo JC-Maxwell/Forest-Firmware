@@ -149,10 +149,17 @@ def update(params):
 
 		result['new'] = total_bills
 
-
 		logger.debug("			Bills to updated: " + str(len(result['updated'])))
-		logger.debug("			Bills to mining: " + str(len(result['new'])))		
-		
+		logger.debug("			Bills to mining: " + str(len(result['new'])))
+
+				
+		logger.debug("			- Remove from Buffer by stock")
+		deleted = 0		
+		for bill in stock:
+			deleted = deleted + 1
+			db_Buffer.remove({"uuid":bill['uuid']})
+		logger.debug("			- Deleted from stock : " + str(deleted))
+
 		# SECCIONAR EL ARREGLO EN: [[],[],[]] O [[]]
 		logger.debug("			Split array of new bills")
 		array_of_bills = []
@@ -167,7 +174,8 @@ def update(params):
 			start += K.MAX_DOWNLOADS 
 		
 		# LUEGO ITERAR SOBRE EL ARREGLO FORMADO
-		for invoices in array_of_bills:
+		for index, invoices in enumerate(array_of_bills):
+			logger.debug('						Section: ' + str(index + 1))
 			response = sat.download_bills(credentials={'identifier':identifier,'password':password},bills=invoices)
 
 		if response.get_type() is K.SUCCESS:

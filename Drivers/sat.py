@@ -232,7 +232,7 @@ def download_bills(**params):
 			response = authentication(browser=browser, identifier=identifier, password=password, method='identifier')
 			if response.get_type() is K.SUCCESS and response.content['status'] is K.AUTHORIZED:
 				# Search bills and extract CFDI Files
-				response = download_files(browser=browser, bills=bills)
+				response = download_files(browser=browser, bills=bills, identifier=identifier)
 	except:
 		# Extract Error
 		e = str(sys.exc_info()[1])
@@ -979,17 +979,18 @@ def download_files(**params):
 		# Get params
 		browser = params['browser']
 		bills = params['bills']
+		identifier = params['identifier']
 
 		for bill in bills:
 
 			if not helper.uuid_is_stored_in_path(BUFFER_PATH,bill['uuid']) and 'xml' in bill:
 				browser.get('https://portalcfdi.facturaelectronica.sat.gob.mx/' + bill['xml'])
-				logger.debug('						DOWNLOAD: ' + bill['uuid'])
+				logger.debug('						DOWNLOAD: ' + identifier + " - "  + bill['uuid'])
 				time.sleep(WAIT_FOR_DOWNLOAD)
 			
 			if (helper.uuid_is_stored_in_path(BUFFER_PATH,bill['uuid']) and 'xml' in bill) or (bill['status'] == K.CANCELED_STATUS):
 				db_Buffer.remove({"uuid":bill['uuid']})
-				logger.debug("							- Remove from DB")
+				logger.debug("							- Remove from Buffer by cancel status or exists in Directory")
 
 		response = Success(bills)
 	except:
