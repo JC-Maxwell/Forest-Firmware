@@ -190,6 +190,8 @@ def update(params):
 						bill['xml'] = data
 					else:
 						bill['xml'] = ''
+				else:
+					logger.debug('			Read XML')
 
 		response = Success(result)
 				
@@ -242,7 +244,9 @@ def get_first_bills(params):
 					if type(data) is str:
 						bill['xml'] = data
 					else:
-						bill['xml'] = ''		
+						bill['xml'] = ''
+				else: 
+					logger.debug('			Read xml error')
 		response = Success(result)
 				
 	except:

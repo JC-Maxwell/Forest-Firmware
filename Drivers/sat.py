@@ -77,7 +77,7 @@ def get_first_bills(**params):
 				# Search bills and extract CFDI Files
 				bills = []
 				for month in months:
-					response = search_bills(browser=browser, type=bill_type, search_by=K.DATE, date={'year':year,'month':month},stock=stock,first_bills=True)
+					response = search_bills(browser=browser, type=bill_type, search_by=K.DATE, date={'year':year,'month':month},stock=stock,credentials=params['credentials'],first_bills=True)
 					if response.get_type() is K.SUCCESS:
 						bills = bills + response.content
 				
