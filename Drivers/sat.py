@@ -168,7 +168,7 @@ def get_bills_by_uuid(**params):
 			response = authentication(browser=browser, identifier=identifier, password=password, method='identifier')
 			if response.get_type() is K.SUCCESS and response.content['status'] is K.AUTHORIZED:
 				# Search bills and extract CFDI Files
-				response = search_bills(browser=browser, type=bill_type, search_by=K.UUID, uuids=uuids,stock=stock)
+				response = search_bills(browser=browser, type=bill_type, search_by=K.UUID, uuids=uuids,stock=stock,credentials=params['credentials'])
 				if response.get_type() is K.SUCCESS: 
 					bills = response.content
 					response =  Success(bills)
@@ -371,7 +371,7 @@ def search_bills(**params):
 		if search_by is K.DATE:
 			response = search_by_date(browser=browser,type=bill_type,date=params['date'],stock=stock,first_bills=first_bills,credentials=credentials)
 		elif search_by is K.UUID:
-			response = search_by_uuid(browser=browser,type=bill_type,uuids=params['uuids'],stock=stock)
+			response = search_by_uuid(browser=browser,type=bill_type,uuids=params['uuids'],stock=stock,credentials=credentials)
 
 		if response.get_type() is K.SUCCESS:
 			# Define response
@@ -828,6 +828,7 @@ def search_by_uuid(**params):
 		# GET PARAMETERS
 		browser = params['browser']
 		bill_type = params['type']
+		credentials = params['credentials']
 		uuids = params['uuids']
 		stock = params['stock']
 		bills = []
@@ -848,7 +849,7 @@ def search_by_uuid(**params):
 			# --------------------- EXTRACT CFDI FILES
 			if response.get_type() is K.SUCCESS:
 				browser = response.content
-				response = cfdi_mining(browser=browser, bills=bills, stock=stock)
+				response = cfdi_mining(browser=browser, bills=bills, stock=stock,credentials=credentials)
 				if response.get_type() is K.SUCCESS:
 					bills = response.content
 			logger.debug('Script')
@@ -982,12 +983,11 @@ def download_files(**params):
 		identifier = params['identifier']
 
 		for bill in bills:
-
+			logger.debug('						UUID: ' + identifier + " - "  + bill['uuid'])
 			if not helper.uuid_is_stored_in_path(BUFFER_PATH,bill['uuid']) and 'xml' in bill:
 				browser.get('https://portalcfdi.facturaelectronica.sat.gob.mx/' + bill['xml'])
-				logger.debug('						DOWNLOAD: ' + identifier + " - "  + bill['uuid'])
 				time.sleep(WAIT_FOR_DOWNLOAD)
-			
+				logger.debug("							- Download")
 			if (helper.uuid_is_stored_in_path(BUFFER_PATH,bill['uuid']) and 'xml' in bill) or (bill['status'] == K.CANCELED_STATUS):
 				db_Buffer.remove({"uuid":bill['uuid']})
 				logger.debug("							- Remove from Buffer by cancel status or exists in Directory")

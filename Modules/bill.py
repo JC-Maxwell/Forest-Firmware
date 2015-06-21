@@ -129,7 +129,7 @@ def get_by_uuid(params):
 			uuids = params['uuids']
 		else:
 			uuids = []
-			result = {'error':'true'}
+			response = {'error':'true'}
 		
 		# Logic
 		if ((identifier is not None) and (password is not None) and (len(uuids)>0)):
@@ -142,26 +142,27 @@ def get_by_uuid(params):
 
 			response = helper.ensure_path(PATH_FILES)
 			if response.get_type() is K.SUCCESS:
-				result = sat.get_bills_by_uuid(type=bill_type,credentials={'identifier':identifier,'password':password}, uuids=uuids,path=PATH_FILES)
-				if result.get_type() is K.SUCCESS and 'status' not in result.content:
-					for status in result.content:
-						for uuid in result.content[status]:
-							# Open the xml file for reading
-							path_file = PATH_FILES + uuid + '.xml'
-							response = helper.read_file(path_file)
+				response = sat.get_bills_by_uuid(type=bill_type,credentials={'identifier':identifier,'password':password}, uuids=uuids,path=PATH_FILES,stock=[])
+				if response.get_type() is K.SUCCESS and response.content is not K.UNAUTHORIZED:
+					bills = response.content
+					response = sat.download_bills(credentials={'identifier':identifier,'password':password},bills=bills)
+					if response.get_type() is K.SUCCESS:
+						for bill in bills:
 
+							path_file = K.BUFFER_PATH + bill['uuid'] + '.xml'
+							response = helper.read_file(path_file)
 							if response.get_type() is K.SUCCESS:
 								data = response.content
 								if type(data) is str:
-									bills[status].append(data)
+									bill['xml'] = data
 								else:
-									bills['pending'].append(uuid)
-					# Define RESPONSE
-					bills['pending'] = list(set(params['uuids']) - set(result.content['ok']) - set(result.content['cancel']))
-					response = Success(bills)
+									bill['xml'] = ''
+							else: 
+								logger.debug('			Read xml error')
+			response = Success(bills)
 
 		else:
-			result = Error(http_code['bad_request'],'identifier, password or year are required')
+			response = Error(http_code['bad_request'],'identifier, password or year are required')
 		logger.info('Start functions in MODULE')
 	except:
 		# Extract Error
