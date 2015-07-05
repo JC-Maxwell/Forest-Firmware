@@ -7,6 +7,7 @@
 # DEVELOPMENT
 from Modules import bill
 from Modules import sat
+from Modules import general
 
 # ============== IMPORT CLASSES
 
@@ -25,5 +26,6 @@ instructions = {
 	'sat_authentication' : sat.authentication,
 	'get_first_bills' : sat.get_first_bills,
 	'get_sat_updates' : sat.update,
-	'download_from_buffer' : sat.download_from_buffer
+	'download_from_buffer' : sat.download_from_buffer,
+	'get_firmware_status' : general.get_status,
 }
