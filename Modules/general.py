@@ -6,14 +6,14 @@
 import logging
 
 # DEVELOPMENT
-from Drivers import sat
-from Modules import helper
-from Modules import constants as K
+from forest_firmware.Drivers import sat
+from forest_firmware.Modules import helper
+from forest_firmware.Modules import constants as K
 
 # ============== IMPORT CLASSES
-from Classes.response import Success
-from Classes.response import Error
-from Classes.response import http_code
+from forest_firmware.Classes.response import Success
+from forest_firmware.Classes.response import Error
+from forest_firmware.Classes.response import http_code
 
 # ============== DEFINE VARIABLES, CONSTANTS AND INITIALIZERS
 

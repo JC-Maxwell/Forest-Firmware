@@ -1,8 +1,7 @@
 # ============== IMPORT MODULES
 
 # NATIVE
-import sys
-import json
+import os, sys, json
 
 # EXTERNAL
 from flask import Flask
@@ -10,14 +9,19 @@ from flask import request
 from flask import jsonify
 from flask import make_response
 
+
 # DEVELOPMENT
-from Modules import log
-from isa import instructions as ISA
+firmware_storage_path = os.path.realpath(__file__).replace("/forest_firmware/main.py", "")
+firmware_storage_absolute_path = os.path.abspath(firmware_storage_path)
+sys.path.append(firmware_storage_absolute_path)
+
+from forest_firmware.Modules import log
+from forest_firmware.isa import instructions as ISA
 
 # ============== IMPORT CLASSES
-from Classes.response import Success
-from Classes.response import Error
-from Classes.response import http_code
+from forest_firmware.Classes.response import Success
+from forest_firmware.Classes.response import Error
+from forest_firmware.Classes.response import http_code
 
 # ============== DEFINE VARIABLES, CONSTANTS AND INITIALIZERS
 

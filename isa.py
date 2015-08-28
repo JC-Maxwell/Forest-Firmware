@@ -5,9 +5,9 @@
 # EXTERNAL
 
 # DEVELOPMENT
-from Modules import bill
-from Modules import sat
-from Modules import general
+from forest_firmware.Modules import bill
+from forest_firmware.Modules import sat
+from forest_firmware.Modules import general
 
 # ============== IMPORT CLASSES
 
