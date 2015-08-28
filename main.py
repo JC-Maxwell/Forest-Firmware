@@ -85,4 +85,4 @@ if __name__ == '__main__':
 
 	# Intialize API	
 	app.debug = True
-	app.run(host='0.0.0.0',threaded=True, port=80)
+	app.run(host='0.0.0.0',threaded=True, port=5001)
