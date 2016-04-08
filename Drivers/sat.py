@@ -19,8 +19,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 
 
-from pyvirtualdisplay import Display
-
 # DEVELOPMENT
 from forest_firmware.Modules import log
 from forest_firmware.Modules import helper
@@ -917,9 +915,9 @@ def cfdi_mining(**params):
 
 					
 					invoice = {
-						'uuid' : str(uuid),
-						'seller' : str(seller),
-						'buyer' : str(buyer),
+						'uuid' : unicode(uuid),
+						'seller' : unicode(seller),
+						'buyer' : unicode(buyer),
 						'status' : K.FISCAL_STATUS[status],
 						'issued_date' : issued_date,
 						'certification_date' : certification_date,

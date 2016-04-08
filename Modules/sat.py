@@ -6,6 +6,7 @@ import math
 import datetime
 
 # EXTERNAL
+from pyvirtualdisplay import Display
 from pymongo import MongoClient
 import logging
 
@@ -34,7 +35,10 @@ def authentication(params):
 	try:
 		# Send to LOGS
 		logger.info('Start function')
-
+		
+		display = Display(visible=0, size=(1024, 768))
+		display.start()
+		
 		# GET PARAMS
 		if 'identifier' in params:
 			identifier = params['identifier']
@@ -61,12 +65,16 @@ def authentication(params):
 
 	# SEND RESPONSE
 	logger.info('End of function')
+	display.stop()
 	return response
 
 def update(params):
 	try:
 		# Get params
-
+		
+		display = Display(visible=0, size=(1024, 768))
+		display.start()
+		
 		identifier = params['identifier']
 		password = params['password']
 		year = params['year']
@@ -202,11 +210,15 @@ def update(params):
 		logger.critical('Internal Error ' + e)
 		# Define RESPONSE
 		response = Error(http_code['internal'],'Internal Server Error')
+	display.stop()
 	return response
 
                                               
 def get_first_bills(params):
 	try:
+		display = Display(visible=0, size=(1024, 768))
+		display.start()
+
 		# Get params
 		identifier = params['identifier']
 		password = params['password']
@@ -256,10 +268,13 @@ def get_first_bills(params):
 		logger.critical('Internal Error ' + e)
 		# Define RESPONSE
 		response = Error(http_code['internal'],'Internal Server Error')
+	display.stop()
 	return response
 
 def download_from_buffer(params):
 	try:
+		display = Display(visible=0, size=(1024, 768))
+		display.start()
 		# Get params
 		identifier = params['identifier']
 		password = params['password']
@@ -345,4 +360,5 @@ def download_from_buffer(params):
 		logger.critical('Internal Error ' + e)
 		# Define RESPONSE
 		response = Error(http_code['internal'],'Internal Server Error')
+	display.stop()
 	return response

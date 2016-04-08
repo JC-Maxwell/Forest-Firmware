@@ -6,6 +6,7 @@ import re
 import sys
 
 # EXTERNAL
+from pyvirtualdisplay import Display
 import logging
 
 # DEVELOPMENT
@@ -32,6 +33,10 @@ logger = logging.getLogger('root')
 def get_by_date(params):
 	try:
 		logger.info('Start functions in MODULE')
+
+		display = Display(visible=0, size=(1024, 768))
+		display.start()
+		
 		# GET PARAMS AND VALIDATE
 		bill_type = K.BILL_TYPE[params['type']]
 
@@ -107,11 +112,17 @@ def get_by_date(params):
 		logger.critical('Error: ' + e)
 		# Create ERROR
 		response = Error(http_code['internal'],'Internal server error')
+	display.stop()
 	return response
 
 def get_by_uuid(params):
+
 	try:
 		logger.info('Start functions in MODULE')
+		
+		display = Display(visible=0, size=(1024, 768))
+		display.start()
+
 		# GET PARAMS AND VALIDATE
 		bill_type = K.BILL_TYPE[params['type']]
 
@@ -163,7 +174,6 @@ def get_by_uuid(params):
 
 		else:
 			response = Error(http_code['bad_request'],'identifier, password or year are required')
-		logger.info('Start functions in MODULE')
 	except:
 		# Extract Error
 		e = str(sys.exc_info()[1])
@@ -172,4 +182,5 @@ def get_by_uuid(params):
 		# Create ERROR
 		response = Error(http_code['internal'],'Internal server error')
 
+	display.stop()
 	return response
